@@ -23,10 +23,14 @@ void gravity(double (*x)[3], double *m, double (*a)[3], double *p, const int n) 
 
 	for (int i = 0; i < n; i++) {
 		//各質点にはたらく重力を計算する
+		p[i] = 0;
+
 		for (int j = 0; j < n; j++) {
 			if (i != j) {
 				r2 = pow(x[j][0] - x[i][0], 2) + pow(x[j][1] - x[i][1], 2) + pow(x[j][2] - x[i][2], 2);
 				r = sqrt(r2);
+
+				if (i < j) p[i] += m[i] * m[j] / r;
 
 				for (int k = 0; k < 3; k++) {
 					a[i][k] += 1.0 * m[j] * (x[j][k] - x[i][k]) / pow(r, 3);
@@ -41,9 +45,8 @@ double energy(double (*v)[3], double *m, double *p, const int n) {
 	double v2, sumEnergy = 0;
 
 	for (int i = 0; i < n; i++) {
-		v2 = pow(v[i][0], 2) + pow(v[i][1], 2) + pow(v[i][2], 2);
-		p[i] = 0.5 * m[i] * v2;
-		sumEnergy += p[i];
+		v2 = 0.5 * m[i] * pow(v[i][0], 2) + pow(v[i][1], 2) + pow(v[i][2], 2);
+		sumEnergy += v2 - p[i];
 	}
 
 	return sumEnergy;
@@ -150,21 +153,23 @@ int main() {
 	double e0 = energy(v, m, p, n);
 	double tnow = 0.0;
 
-	cout << tnow << "\t"
+	/*cout << tnow << "\t"
 		 << x[0][0] << "\t" << x[0][1] << "\t" << x[0][2] << "\t"
 		 << x[1][0] << "\t" << x[1][1] << "\t" << x[1][2] << "\t"
-		 << x[2][0] << "\t" << x[2][1] << "\t" << x[2][2] << endl;
+		 << x[2][0] << "\t" << x[2][1] << "\t" << x[2][2] << endl;*/
 
 	while (tnow < tend) {
-		runge2(x, v, m, a, p, dt, n);
+		runge4(x, v, m, a, p, dt, n);
 		double e = energy(v, m, p, n);
 		tnow += dt;
 
-		cout << tnow << "\t"
+		cout << e << endl;
+
+		/*cout << tnow << "\t"
 		 	 << x[0][0] << "\t" << x[0][1] << "\t" << x[0][2] << "\t"
 		 	 << x[1][0] << "\t" << x[1][1] << "\t" << x[1][2] << "\t"
 		 	 << x[2][0] << "\t" << x[2][1] << "\t" << x[2][2] << "\t"
-		 	 << e << "\t" << (e - e0) / e0 << endl;
+		 	 << e << "\t" << (e - e0) / e0 << endl;*/
 	}
 
 	return 0;

@@ -15,6 +15,8 @@ static double l[NMAX][3], l1[NMAX][3], l2[NMAX][3], l3[NMAX][3], l4[NMAX][3];
 void gravity(double (*x)[3], double *m, double (*a)[3], double *p, const int n) {
 	for (int i = 0; i < n; i++) {
 		//各質点にはたらく重力を計算する
+		p[i] = 0;
+
 		for (int j = 0; j < 3; j++) {
 			a[i][j] = 0;
 		}
@@ -26,9 +28,10 @@ void gravity(double (*x)[3], double *m, double (*a)[3], double *p, const int n) 
 					dr += pow(x[j][k] - x[i][k], 2);
 				}
 				dr = sqrt(dr);
+				if (i < j) p[i] += m[i] * m[j] / dr;
 
 				for (int k = 0; k < 3; k++) {
-					a[i][k] += 1.0 * m[i] * (x[j][k] - x[i][k]) / pow(dr, 3.0);
+					a[i][k] += 1.0 * m[j] * (x[j][k] - x[i][k]) / pow(dr, 3.0);
 				}
 			}
 		}
@@ -40,12 +43,40 @@ double energy(double (*v)[3], double *m, double *p, const int n) {
 	double v2, sumEnergy = 0;
 
 	for (int i = 0; i < n; i++) {
-		v2 = pow(v[i][0], 2) + pow(v[i][1], 2) + pow(v[i][2], 2);
-		p[i] = 0.5 * m[i] * v2;
-		sumEnergy += p[i];
+		v2 = 0.5 * m[i] * (pow(v[i][0], 2) + pow(v[i][1], 2) + pow(v[i][2], 2));
+		sumEnergy += v2 - p[i];
 	}
 
 	return sumEnergy;
+}
+
+void runge2(double (*x)[3], double (*v)[3], double *m, double (*a)[3], double *p, const double dt, const int n) {
+	gravity(x, m, a, p, n);
+
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < 3; j++) {
+			k1[i][j] = v[i][j] * dt;
+			l1[i][j] = a[i][j] * dt;
+
+			xtmp[i][j] = x[i][j] + k1[i][j];
+		}
+	}
+
+	gravity(xtmp, m, a, p, n);
+
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < 3; j++) {
+			k2[i][j] = (v[i][j] + l1[i][j]) * dt;
+			l2[i][j] = a[i][j] * dt;
+
+			k[i][j] = 0.5 * (k1[i][j] + k2[i][j]);
+			l[i][j] = 0.5 * (l1[i][j] + l2[i][j]);
+
+			x[i][j] += k[i][j];
+			v[i][j] += l[i][j];
+		}
+	}
+
 }
 
 void runge4(double (*x)[3], double (*v)[3], double *m, double (*a)[3], double *p, const double dt, const int n) {
@@ -129,6 +160,8 @@ int main() {
 		runge4(x, v, m, a, p, dt, n);
 		double e = energy(v, m, p, n);
 		tnow += dt;
+
+		//cout << e << endl;
 
 		cout << tnow << "\t"
 		 	 << x[0][0] << "\t" << x[0][1] << "\t" << x[0][2] << "\t"
